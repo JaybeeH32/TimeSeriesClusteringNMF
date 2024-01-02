@@ -138,7 +138,7 @@ def kernel_nmf(V, d, kernel='gaussian', sigma=1.0, degree=3, alpha=1.0, beta=1.0
     h = nm.components_
     return w, h, np.linalg.norm(A - w@h)
 
-def rgnmf_multi(X, d, alpha=1.0, beta=1.0, eps=1e-10, max_iters=100):
+def rgnmf_multi(X, d, alpha=1.0, beta=1.0, eps=1e-8, max_iters=100):
     """
     Inspired by "Robust Graph Regularized Nonnegative Matrix Factorization for Clustering", Peng, Kang, Cheng, Hu
     https://www.researchgate.net/publication/308718276_Robust_Graph_Regularized_Nonnegative_Matrix_Factorization_for_Clustering
@@ -156,22 +156,22 @@ def rgnmf_multi(X, d, alpha=1.0, beta=1.0, eps=1e-10, max_iters=100):
         
     # update rule
     for iter in range(max_iters):
-        U = U * ((X - S)@V) / (U@V.T@V)
-        V = V * ((X - S).T@U + beta* W@V) / (V@U.T@U + beta*D@V)
+        U = U * ((X - S)@V) / (U@V.T@V)#np.where(U@V.T@V > eps, U@V.T@V, eps)
+        V = V * ((X - S).T@U + beta* W@V) / (V@U.T@U + beta*D@V)#np.where(V@U.T@U + beta*D@V > eps, V@U.T@U + beta*D@V, eps)
         S = np.where(X - U@V.T >= alpha, X - U@V.T, 0)
         
         residual.append(np.linalg.norm(X - U@V.T - S, ord='fro'))
     
     return U, V.T, S, residual
 
-def sym_nmf(V, d, eps=1e-3, sigma=0.9, beta=0.8, max_iters=100):
+def sym_nmf(V, d, lr=1e-4, eps=1e-5, sigma=0.9, beta=0.8, max_iters=100):
     '''
     "Symmetric Nonnegative Matrix Factorization for Graph Clustering", Kuang, Ding, Park
     Implementation according to https://faculty.cc.gatech.edu/~hpark/papers/DaDingParkSDM12.pdf
 
     '''
     n = len(V)
-    h = np.random.random(size=(n, d))
+    h = 10 * np.random.random(size=(n, d))
     residual = []
     iter = 0
     while np.linalg.norm(V - h@h.T, ord='fro') > eps and iter < max_iters:
@@ -179,13 +179,12 @@ def sym_nmf(V, d, eps=1e-3, sigma=0.9, beta=0.8, max_iters=100):
         S = np.eye(n*d)
         alpha = 1
         grad_f = 4 * (h@h.T - V) @h
-        t = h - alpha * grad_f
+        t = h - alpha * lr * grad_f
         h_new = np.where(t >=0, t, 0)
-        # while True:
-        #     t = h - alpha * grad_f
-        #     h_new = np.where(t >=0, t, 0)
-        #     if np.linalg.norm(V - h@h.T, ord='fro') - np.linalg.norm(V - h@h.T, ord='fro') - sigma * np.linalg.norm(grad_f.T@(h_new - h), ord='fro') >= -1e-5:
-        #         alpha = beta*alpha
+        while not np.linalg.norm(V - h_new@h_new.T, ord='fro')**2 - np.linalg.norm(V - h@h.T, ord='fro')**2 - sigma * grad_f.flatten('F').T@(h_new.flatten('F') - h.flatten('F')) <= 0:
+            alpha = beta*alpha
+            t = h - alpha * lr * grad_f
+            h_new = np.where(t >=0, t, 0)
         h = h_new
         residual.append(np.linalg.norm(V - h@h.T, ord='fro'))
     return h, h.T, residual
