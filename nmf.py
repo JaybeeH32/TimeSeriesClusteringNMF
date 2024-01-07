@@ -6,13 +6,14 @@ from sklearn.decomposition import NMF
 from sklearn.metrics.pairwise import polynomial_kernel, rbf_kernel, sigmoid_kernel
 
 # NMF related functions
-def sparse_nmf(V, d, beta, eta, max_iters=100):
+def sparse_nmf(V, d, beta=0.1, eta=0.1, max_iters=100):
     '''
     Implementation according to https://faculty.cc.gatech.edu/~hpark/papers/GT-CSE-08-01.pdf
     
     Beta controls L1 norm of H
     Eta controls norm of W
     '''
+    print(beta, eta, max_iters)
     n = len(V)
     residual = np.zeros(max_iters)
     H = np.random.random(size=(d, n))
@@ -93,13 +94,13 @@ def nmf(V, d, max_iters=100):
     print(f'Iteration {iter_num}, residual norm {prob.value}')
     return W, H, residual
 
-def nmf_sklearn(A, d):
-    nm = NMF(n_components=d)
+def nmf_sklearn(A, d, max_iter=200):
+    nm = NMF(n_components=d, max_iter=max_iter)
     w = nm.fit_transform(A)
     h = nm.components_
     return w, h, np.linalg.norm(A - w@h)
 
-def semi_nmf(V, d, max_iters=100):
+def semi_nmf(V, d, max_iters=100, safeguard=False, lower_limit=1e-8, higher_limit=1e8):
     """
     Algorithm taken from "Convex and Semi-Nonnegative Matrix Factorizations", Ding, Li, Jordan
 
@@ -107,38 +108,46 @@ def semi_nmf(V, d, max_iters=100):
     n = np.shape(V)[0]
     # initialization
     W = 5 * (0.5 - np.random.random(size=(n, d)))
-    H = np.random.random(size=(n, d))
+    H = 5 * np.random.random(size=(n, d))
     residual = []
     
     for iter in range(max_iters):
-        W = V@H@np.linalg.inv(H.T@H)
+        try:
+            W = V@H@np.linalg.inv(H.T@H)
+        except:
+            print('Singular matrix during inversion !')
+            break
         
         A = V.T@W
         A_plus, A_ = np.where(A >= 0, A, 0), np.where(A <= 0, -A, 0)
         B = W.T@W
         B_plus, B_ = np.where(B >= 0, B, 0), np.where(B <= 0, -B, 0)
         
-        H = H * np.sqrt((A_plus + H@B_) / (A_ + H@B_plus))
+        if safeguard:
+            H = H * np.sqrt((A_plus + H@B_) / np.where(A_ + H@B_plus <= eps, eps, A_ + H@B_plus))
+            H = np.where(H >= limit, limit, H)
+        else:
+            H = H * np.sqrt((A_plus + H@B_) / (A_ + H@B_plus))
         
         residual.append(np.linalg.norm(V-W@H.T, ord='fro'))
     return W, H.T, residual
 
-def kernel_nmf(V, d, kernel='gaussian', sigma=1.0, degree=3, alpha=1.0, beta=1.0):
+def kernel_nmf(V, d, kernel='gaussian', sigma=1.0, degree=3, alpha=1.0, beta=1.0, max_iters=500):
     """
     Inspired by "Non-negative Matrix Factorization on Kernels", Zhang, Zhou, Chen
     """
     if kernel == 'gaussian':
         A = rbf_kernel(V, gamma=1/sigma**2)
     if kernel == 'polynomial':
-        A = polynomial_kernel(V, degree)
+        A = polynomial_kernel(V, degree=degree)
     if kernel == 'sigmoid':
         A = sigmoid_kernel(V, gamma=alpha, coef0=beta)
-    nm = NMF(n_components=d)
+    nm = NMF(n_components=d, max_iter=max_iters)
     w = nm.fit_transform(A)
     h = nm.components_
     return w, h, np.linalg.norm(A - w@h)
 
-def rgnmf_multi(X, d, alpha=1.0, beta=1.0, eps=1e-8, max_iters=100):
+def rgnmf_multi(X, d, alpha=1.0, beta=1.0, max_iters=100, safeguard=False, lower_limit=1e-4, higher_limit=1e4):
     """
     Inspired by "Robust Graph Regularized Nonnegative Matrix Factorization for Clustering", Peng, Kang, Cheng, Hu
     https://www.researchgate.net/publication/308718276_Robust_Graph_Regularized_Nonnegative_Matrix_Factorization_for_Clustering
@@ -156,8 +165,17 @@ def rgnmf_multi(X, d, alpha=1.0, beta=1.0, eps=1e-8, max_iters=100):
         
     # update rule
     for iter in range(max_iters):
-        U = U * ((X - S)@V) / (U@V.T@V)#np.where(U@V.T@V > eps, U@V.T@V, eps)
-        V = V * ((X - S).T@U + beta* W@V) / (V@U.T@U + beta*D@V)#np.where(V@U.T@U + beta*D@V > eps, V@U.T@U + beta*D@V, eps)
+        if iter>= 2 and residual[-1] <= 1e-6:
+            print('break')
+            break
+        if safeguard:
+            U = U * ((X - S)@V) / np.where(U@V.T@V > lower_limit, U@V.T@V, lower_limit)
+            V = V * ((X - S).T@U + beta* W@V) / np.where(V@U.T@U + beta*D@V > lower_limit, V@U.T@U + beta*D@V, lower_limit)
+            U = np.where(U>= higher_limit, higher_limit, U)
+            V = np.where(V>= higher_limit, higher_limit, V)
+        else:
+            U = U * ((X - S)@V) / (U@V.T@V)#np.where(U@V.T@V > eps, U@V.T@V, eps)
+            V = V * ((X - S).T@U + beta* W@V) / (V@U.T@U + beta*D@V)#np.where(V@U.T@U + beta*D@V > eps, V@U.T@U + beta*D@V, eps)
         S = np.where(X - U@V.T >= alpha, X - U@V.T, 0)
         
         residual.append(np.linalg.norm(X - U@V.T - S, ord='fro'))
