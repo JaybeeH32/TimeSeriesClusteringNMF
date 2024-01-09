@@ -1,1 +1,11 @@
 dtw-python==1.3.0
+numpy
+torch
+matplotlib
+networkx
+scikit-learn
+pandas
+umap
+tslearn
+cvxpy
+gensim
