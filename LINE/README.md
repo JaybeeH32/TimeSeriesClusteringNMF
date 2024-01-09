@@ -1,5 +1,6 @@
 In this folder are the functions to use the LINE algorithm. 
 Note that we use an implementation of LINE using previous versions of packages. Therefore, to use the LINE algorithm you need to save in the adjacency folder the adjacency matrix of the graph you want to process. 
+If you want to use the ptb dataset, you need to put the csv in the folder.
 
 To do this, just enter the command line:
 
