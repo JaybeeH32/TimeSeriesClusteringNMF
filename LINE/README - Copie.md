@@ -1,31 +1,28 @@
-First step: 
+In this folder are the functions to use the LINE algorithm. 
+Note that we use an implementation of LINE using previous versions of packages. Therefore, to use the LINE algorithm you need to save in the adjacency folder the adjacency matrix of the graph you want to process. 
 
-Use your usual env to save the adjacency matrix you want to work on. Choose the dataset and the epsilon value
+To do this, just enter the command line:
 
-python save_adjacency.py --dataset Beef --eps 0.1 
+python save_adjacency.py --dataset Beef --eps 0.1 --ptb 0
 
-Second step:
+--dataset: precise the dataset
+--eps: precise the value of eps 
+--ptb: precise if the dataset is the ptb or not 
 
-run this on the other environment with the input file being the adjacency matrix saved 
+
+Then, on another environnement, you need to enter the command line: (Replace Beef and 0.1 by your value of dataset and eps)
 
 python line/main.py --input adjacency/.Beef;eps=0.1.npz --output embeddings/.Beef;eps=0.1.line.embeddings --iter 200 --proximity second-order
 
-Thrid step : 
-
-create the numpy file
-
 python evaluate_tencent.py --emb embeddings/.Coffee;eps=0.478297.line.embeddings --net adjacency/.Coffee;eps=0.478297.npz --testdir output
 
-4th step:
+Now, the embeddings of the graph will be saved in the output file, and you can load it using functions in clustering_algos.py or in the notebook. 
 
-Load the embeddings and perform a kmeans on it. 
-
-
-Pour installer le second env, il faut faire un env avec python 3.7, il faut installer tensorflow 15.5
+To install the second environnment, you need to do the following steps:
 
 First:
-    conda create --name tf1env python=3.7
-    conda activate tf1env
+    conda create --name tf1env python=3.7 #create an environnment with python 3.7
+    conda activate tf1env 
     pip install tensorflow==1.15.5
 
 In case of protobuf error:
