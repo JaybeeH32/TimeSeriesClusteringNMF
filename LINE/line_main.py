@@ -6,8 +6,8 @@
 import tensorflow as tf
 import numpy as np
 import argparse
-from model import Line
-from graph import Graph
+from line_model import Line
+from line_graph import Graph
 import pickle
 import time
 

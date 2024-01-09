@@ -2,7 +2,6 @@ from sklearn.cluster import KMeans
 from sklearn.cluster import SpectralClustering
 from sklearn.mixture import GaussianMixture
 import numpy as np
-from libraries.randomwalk import Node2Vec
 import networkx as nx
 
 
@@ -46,12 +45,12 @@ def gaussian_mixture(A, d, direct=True):
             arr[i, predicted_clusters[i]] = 1.0
         return arr, 0, 0
     
-def node2vec_clustering(A, d, n_dim=128, n=50, length=25, p=0.5, q=2, direct=True):
-    G = nx.from_numpy_array(A)
-    node2vec = Node2Vec(G, n_dim, n, length, p, q)
-    embeddings = node2vec.Skipgram_embeddings()
-    predicted_clusters = kmeans(embeddings, d, direct=direct)
-    return predicted_clusters
+# def node2vec_clustering(A, d, n_dim=128, n=50, length=25, p=0.5, q=2, direct=True):
+#     G = nx.from_numpy_array(A)
+#     node2vec = Node2Vec(G, n_dim, n, length, p, q)
+#     embeddings = node2vec.Skipgram_embeddings()
+#     predicted_clusters = kmeans(embeddings, d, direct=direct)
+#     return predicted_clusters
 
 def line_clustering(dataset, eps, d):
     emb_path = "output" + f'\{dataset};eps={eps}.npz.npy' 

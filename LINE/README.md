@@ -3,16 +3,15 @@ Note that we use an implementation of LINE using previous versions of packages. 
 
 To do this, just enter the command line:
 
-python save_adjacency.py --dataset Beef --eps 0.1 --ptb 0
+python save_adjacency.py --dataset Beef --eps 0.1 
 
 --dataset: precise the dataset
 --eps: precise the value of eps 
---ptb: precise if the dataset is the ptb or not 
 
 
 Then, on another environnement, you need to enter the command line: (Replace Beef and 0.1 by your value of dataset and eps)
 
-python line/main.py --input adjacency/.Beef;eps=0.1.npz --output embeddings/.Beef;eps=0.1.line.embeddings --iter 200 --proximity second-order
+python line_main.py --input adjacency/.Beef;eps=0.1.npz --output embeddings/.Beef;eps=0.1.line.embeddings --iter 500 --proximity second-order
 
 python evaluate_tencent.py --emb embeddings/.Coffee;eps=0.478297.line.embeddings --net adjacency/.Coffee;eps=0.478297.npz --testdir output
 

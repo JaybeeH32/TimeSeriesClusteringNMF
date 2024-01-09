@@ -6,8 +6,8 @@ import networkx as nx
 import pandas as pd
 
 def main(args):
-
-    if args.ptb == 0:
+    print(args.dataset != 'ptb')
+    if args.dataset != 'ptb':
         dataset = load_ts_dataset(args.dataset)
         data = dataset[0]
     else:
@@ -22,7 +22,7 @@ def main(args):
     # A = epsilon_graph_mean(dist)
     print(A)
     G = nx.from_numpy_array(A)
-    npz_file_path = r"C:\Users\benja\Documents\MVA\P1\TimeSeries\Project\NetworkEmbedding-master\adjacency\." + args.dataset + ';eps=' + args.eps +'.npz'
+    npz_file_path = "adjacency\." + args.dataset + ';eps=' + args.eps +'.npz'
 
     print(npz_file_path)
     sp.save_npz(npz_file_path, nx.adjacency_matrix(G))
@@ -35,7 +35,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', required=True)
     parser.add_argument('--eps', default=0.16677)
-    parser.add_argument('--ptb', default = 0)
 
     args = parser.parse_args()
     main(args)
