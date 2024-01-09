@@ -52,3 +52,9 @@ def node2vec_clustering(A, d, n_dim=128, n=50, length=25, p=0.5, q=2, direct=Tru
     embeddings = node2vec.Skipgram_embeddings()
     predicted_clusters = kmeans(embeddings, d, direct=direct)
     return predicted_clusters
+
+def line_clustering(dataset, eps, d):
+    emb_path = "output" + f'\{dataset};eps={eps}.npz.npy' 
+    embeddings = np.load(emb_path)
+    predicted_clusters = kmeans(embeddings, d)
+    return predicted_clusters
